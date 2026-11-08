@@ -13,6 +13,30 @@ Built for the **Unstop Software Developer Internship – Task Submission Round**
 
 ---
 
+### Email Notification Verification
+
+The email notification workflow was tested successfully in the live production environment.
+
+**Verified workflow:**
+1. An intern submits a GitHub solution.
+2. The backend triggers the submission notification.
+3. The administrator receives the email in the configured inbox.
+4. The notification includes the intern's details, GitHub submission URL, submission timestamp, notes, and Admin Review Queue link.
+
+**Production Evidence**
+
+<img width="1878" height="865" alt="image" src="https://github.com/user-attachments/assets/524b24a4-a3fa-4ebe-b60b-122b62e6f6ff" />
+
+
+*Figure: Actual production email received after an intern submitted a task.*
+
+**Resend Sandbox Limitation**
+
+The demonstration uses Resend's testing sender (`onboarding@resend.dev`). Its sandbox restricts delivery to the verified account owner's email address. The screenshot proves successful delivery to the configured administrator inbox; it does not prove unrestricted external email delivery.
+
+For unrestricted production delivery, a verified custom sending domain must be configured in Resend.
+
+
 ## 🌐 Live Production Deployments
 
 | Component | Service | Live Production URL | Health Status |
@@ -317,8 +341,6 @@ The system integrates the **Resend API** for automated communications across thr
 1. **Task Assignment Notification:** Triggered when an admin creates a task. Intern receives task title, cadence, deadline, max points, and workspace CTA link.
 2. **Task Submission Alert:** Triggered when an intern submits work. Admin receives candidate name, email, task title, GitHub URL, notes, and review queue link.
 3. **Evaluation Decision Notification:** Triggered when an admin evaluates a submission. Intern receives the outcome (`APPROVED` or `REVISION REQUESTED`), score breakdown (`85 / 100 Points`), instructor feedback notes, and dashboard CTA.
-
-*All email templates feature responsive mobile-first HTML styling, fallback plain-text equivalents, and HTML entity escaping (`escapeHtml()`) to prevent email injection attacks.*
 
 ---
 
