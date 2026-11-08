@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Submission } from '../models/submission.model.js';
 import { Task } from '../models/task.model.js';
+import { AdminHistory } from '../models/adminHistory.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -99,6 +100,28 @@ export const getAllSubmissions = asyncHandler(async (req, res) => {
   if (status) filter.status = status;
   if (intern && mongoose.Types.ObjectId.isValid(intern)) filter.intern = intern;
   if (task && mongoose.Types.ObjectId.isValid(task)) filter.task = task;
+
+  // Retrieve admin-specific hidden history preferences
+  const preference = await AdminHistory.findOne({ admin: req.user._id });
+  if (preference) {
+    const hiddenIds = preference.hiddenSubmissions || [];
+    const clearedAt = preference.historyClearedAt;
+
+    const exclusions = [];
+    if (hiddenIds.length > 0) {
+      exclusions.push({ _id: { $in: hiddenIds } });
+    }
+    if (clearedAt) {
+      exclusions.push({
+        isEvaluated: true,
+        reviewedAt: { $lte: clearedAt },
+      });
+    }
+
+    if (exclusions.length > 0) {
+      filter.$nor = exclusions;
+    }
+  }
 
   const submissions = await Submission.find(filter)
     .populate('task', 'title taskType maxPoints deadline status')
@@ -277,3 +300,58 @@ export const reviewSubmission = asyncHandler(async (req, res) => {
     new ApiResponse(200, evaluatedSubmission, `Submission has been ${status} successfully`)
   );
 });
+
+/**
+ * Hide an individual history record from the requesting admin's view
+ * DELETE /api/submissions/history/:id
+ */
+export const hideSubmissionHistory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, 'Invalid submission ID format');
+  }
+
+  const submission = await Submission.findById(id);
+  if (!submission) {
+    throw new ApiError(404, 'Submission record not found');
+  }
+
+  await AdminHistory.findOneAndUpdate(
+    { admin: req.user._id },
+    { $addToSet: { hiddenSubmissions: submission._id } },
+    { upsert: true, new: true }
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, { submissionId: id }, 'History record removed from your view successfully')
+  );
+});
+
+/**
+ * Clear all evaluation history records for the requesting admin
+ * DELETE /api/submissions/history
+ */
+export const clearAllSubmissionHistory = asyncHandler(async (req, res) => {
+  // Find all currently evaluated submissions to add to exclusion set
+  const evaluatedSubmissions = await Submission.find({ isEvaluated: true }).select('_id');
+  const evaluatedIds = evaluatedSubmissions.map((s) => s._id);
+
+  await AdminHistory.findOneAndUpdate(
+    { admin: req.user._id },
+    {
+      $addToSet: { hiddenSubmissions: { $each: evaluatedIds } },
+      historyClearedAt: new Date(),
+    },
+    { upsert: true, new: true }
+  );
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { clearedCount: evaluatedIds.length },
+      'All evaluation history removed from your view successfully'
+    )
+  );
+});
+

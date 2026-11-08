@@ -153,4 +153,18 @@ export const submissionService = {
       body: JSON.stringify(reviewData),
     });
   },
+
+  // Admin: hide single evaluation history record from admin's view
+  hideHistoryItem: async (id) => {
+    return apiRequest(`/submissions/history/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Admin: clear all evaluation history records from admin's view
+  clearAllHistory: async () => {
+    return apiRequest('/submissions/history', {
+      method: 'DELETE',
+    });
+  },
 };

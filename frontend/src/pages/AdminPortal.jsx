@@ -67,6 +67,13 @@ export default function AdminPortal() {
   const [reviewing, setReviewing] = useState(false);
   const [reviewError, setReviewError] = useState('');
 
+  // History Removal Modal States
+  const [isDeleteHistoryModalOpen, setIsDeleteHistoryModalOpen] = useState(false);
+  const [historyToDelete, setHistoryToDelete] = useState(null);
+  const [isDeletingHistory, setIsDeletingHistory] = useState(false);
+  const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+
   // Fetch all admin datasets
   const fetchAllData = async () => {
     try {
@@ -295,6 +302,56 @@ export default function AdminPortal() {
       setReviewError(err.message || 'Failed to submit review');
     } finally {
       setReviewing(false);
+    }
+  };
+
+  // Open confirmation modal to remove single history item
+  const handleConfirmDeleteHistory = (sub) => {
+    setHistoryToDelete(sub);
+    setIsDeleteHistoryModalOpen(true);
+  };
+
+  // Execute deletion of single history item from admin view
+  const handleExecuteDeleteHistory = async () => {
+    if (!historyToDelete) return;
+    try {
+      setIsDeletingHistory(true);
+      await submissionService.hideHistoryItem(historyToDelete._id);
+      setNotification({
+        type: 'success',
+        message: 'Evaluation record removed from your admin view.',
+      });
+      setIsDeleteHistoryModalOpen(false);
+      setHistoryToDelete(null);
+      fetchAllData();
+    } catch (err) {
+      setNotification({
+        type: 'error',
+        message: err.message || 'Failed to remove history record.',
+      });
+    } finally {
+      setIsDeletingHistory(false);
+    }
+  };
+
+  // Execute clear-all history from admin view
+  const handleExecuteClearHistory = async () => {
+    try {
+      setIsClearingHistory(true);
+      await submissionService.clearAllHistory();
+      setNotification({
+        type: 'success',
+        message: 'All evaluation history has been removed from your admin view.',
+      });
+      setIsClearHistoryModalOpen(false);
+      fetchAllData();
+    } catch (err) {
+      setNotification({
+        type: 'error',
+        message: err.message || 'Failed to clear evaluation history.',
+      });
+    } finally {
+      setIsClearingHistory(false);
     }
   };
 
@@ -774,14 +831,26 @@ export default function AdminPortal() {
             {/* TAB 5: EVALUATION HISTORY */}
             {activeTab === 'history' && (
               <div className="space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">Evaluation History</h2>
                     <p className="text-xs text-slate-500">Record of all reviewed submissions and awarded points</p>
                   </div>
-                  <span className="text-xs font-mono font-semibold text-slate-600 px-3 py-1 rounded-full bg-slate-100 border border-slate-200">
-                    {submissions.filter((s) => s.isEvaluated).length} Reviewed
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-mono font-semibold text-slate-600 px-3 py-1 rounded-full bg-slate-100 border border-slate-200">
+                      {submissions.filter((s) => s.isEvaluated).length} Reviewed
+                    </span>
+                    {submissions.filter((s) => s.isEvaluated).length > 0 && (
+                      <button
+                        onClick={() => setIsClearHistoryModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer shadow-xs"
+                        title="Clear all evaluation history records from your admin view"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Clear History</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {submissions.filter((s) => s.isEvaluated).length === 0 ? (
@@ -826,12 +895,22 @@ export default function AdminPortal() {
                                   "{sub.feedback || 'Good work'}"
                                 </td>
                                 <td className="px-5 py-4 text-right">
-                                  <button
-                                    onClick={() => handleOpenReview(sub)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors cursor-pointer"
-                                  >
-                                    Re-examine
-                                  </button>
+                                  <div className="inline-flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => handleOpenReview(sub)}
+                                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors cursor-pointer"
+                                    >
+                                      Re-examine
+                                    </button>
+                                    <button
+                                      onClick={() => handleConfirmDeleteHistory(sub)}
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                                      title="Remove from my history view"
+                                      aria-label="Delete history record"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-rose-500" />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -1206,6 +1285,101 @@ export default function AdminPortal() {
               </div>
             </form>
           )}
+        </Modal>
+
+        {/* SINGLE HISTORY RECORD REMOVAL CONFIRMATION MODAL */}
+        <Modal
+          isOpen={isDeleteHistoryModalOpen}
+          onClose={() => {
+            if (!isDeletingHistory) {
+              setIsDeleteHistoryModalOpen(false);
+              setHistoryToDelete(null);
+            }
+          }}
+          title="Remove History Record"
+        >
+          <div className="space-y-4">
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed">
+              <span className="font-bold block mb-1">Admin-Only View Removal</span>
+              This will remove this record <strong>only from your personal admin history view</strong>. The intern's grade, earned points, feedback, and submission record remain completely untouched and visible in the intern dashboard.
+            </div>
+
+            {historyToDelete && (
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Intern:</span>
+                  <span className="font-semibold text-slate-900">{historyToDelete.intern?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Task:</span>
+                  <span className="font-semibold text-slate-900">{historyToDelete.task?.title}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Awarded Points:</span>
+                  <span className="font-mono font-bold text-emerald-700">{historyToDelete.pointsAwarded} pts</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isDeletingHistory}
+                onClick={() => {
+                  setIsDeleteHistoryModalOpen(false);
+                  setHistoryToDelete(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingHistory}
+                onClick={handleExecuteDeleteHistory}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingHistory ? 'Removing...' : 'Remove from My View'}</span>
+              </button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* CLEAR ALL HISTORY CONFIRMATION MODAL */}
+        <Modal
+          isOpen={isClearHistoryModalOpen}
+          onClose={() => {
+            if (!isClearingHistory) setIsClearHistoryModalOpen(false);
+          }}
+          title="Clear Evaluation History"
+        >
+          <div className="space-y-4">
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs leading-relaxed">
+              <span className="font-bold block mb-1">Clear All Admin History</span>
+              Are you sure you want to clear your evaluation history? All currently evaluated submissions will disappear <strong>only from your personal admin view</strong>. Interns will continue seeing all their completed assignments, feedback, and total points unaffected.
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isClearingHistory}
+                onClick={() => setIsClearHistoryModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isClearingHistory}
+                onClick={handleExecuteClearHistory}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isClearingHistory ? 'Clearing...' : 'Clear All History'}</span>
+              </button>
+            </div>
+          </div>
         </Modal>
       </div>
     </DashboardLayout>
