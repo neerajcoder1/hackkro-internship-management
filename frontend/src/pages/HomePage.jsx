@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import heroIllustration from '../assets/hackkro-login-illustration.jpg';
+import PortalSelection from '../components/PortalSelection.jsx';
 
 export default function HomePage() {
   const { user, isAuthenticated, isAdmin } = useAuth();
@@ -74,6 +75,13 @@ export default function HomePage() {
                   >
                     <span>Sign In</span>
                   </Link>
+
+                  <a
+                    href="#portals"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-slate-600 hover:text-blue-600 font-semibold text-sm transition-colors cursor-pointer w-full sm:w-auto"
+                  >
+                    <span>Choose Portal &darr;</span>
+                  </a>
                 </>
               )}
             </div>
@@ -93,8 +101,13 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PORTAL SELECTION SECTION */}
+      <div id="portals" className="border-t border-slate-100 bg-slate-50/50">
+        <PortalSelection />
+      </div>
+
       {/* THREE CORE FEATURE CARDS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-24 w-full">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full border-t border-slate-100">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1: Task & Project Management */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs flex items-start space-x-4 hover:border-blue-300 transition-all">

@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  AlertCircle,
+  Loader2,
+  ShieldCheck,
+  GraduationCap,
+} from 'lucide-react';
 import loginIllustration from '../assets/hackkro-login-illustration.jpg';
 
 export default function LoginPage() {
@@ -21,6 +30,7 @@ export default function LoginPage() {
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/';
+  const portalParam = new URLSearchParams(location.search).get('portal');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -108,14 +118,63 @@ export default function LoginPage() {
           </div>
 
           {/* Form Header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              Welcome back
+              {portalParam === 'admin'
+                ? 'Admin & Staff Sign In'
+                : portalParam === 'intern'
+                ? 'Intern Workspace Sign In'
+                : 'Welcome back'}
             </h1>
             <p className="text-sm text-slate-500 mt-2">
-              Sign in to continue to your internship workspace.
+              {portalParam === 'admin'
+                ? 'Sign in with administrative credentials to access the management console.'
+                : portalParam === 'intern'
+                ? 'Sign in to access your assigned tasks and submit your deliverables.'
+                : 'Sign in to continue to your internship workspace.'}
             </p>
           </div>
+
+          {/* Contextual Portal Alert / Switcher */}
+          {portalParam === 'admin' && (
+            <div className="mb-6 p-3.5 rounded-xl bg-slate-900 text-white shadow-xs flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-semibold text-xs block text-white">Admin / Employee Portal</span>
+                  <span className="text-[11px] text-slate-400 block">Privileged management access</span>
+                </div>
+              </div>
+              <Link
+                to="/portals"
+                className="text-[11px] font-medium text-blue-300 hover:text-white underline shrink-0"
+              >
+                Switch Portal
+              </Link>
+            </div>
+          )}
+
+          {portalParam === 'intern' && (
+            <div className="mb-6 p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 shadow-xs flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-semibold text-xs block text-blue-950">Intern Workspace</span>
+                  <span className="text-[11px] text-blue-700 block">Candidate & intern dashboard</span>
+                </div>
+              </div>
+              <Link
+                to="/portals"
+                className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 underline shrink-0"
+              >
+                Switch Portal
+              </Link>
+            </div>
+          )}
 
           {/* Validation / Authentication Error Display */}
           {formError && (

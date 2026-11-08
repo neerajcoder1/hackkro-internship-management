@@ -58,6 +58,17 @@ export default function Navbar() {
             Overview
           </Link>
 
+          <Link
+            to="/portals"
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              isActive('/portals')
+                ? 'text-blue-600 bg-blue-50 font-semibold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            Portals
+          </Link>
+
           {isAuthenticated ? (
             <>
               {/* Intern Workspace */}
